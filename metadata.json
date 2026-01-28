@@ -1,5 +1,5 @@
 {
-  "name": "Bomba Numérica AI",
-  "description": "Un juego de tensión y azar donde los jugadores deben evitar la cifra explosiva. Incluye un anfitrión de IA que comenta la partida en tiempo real.",
+  "name": "Bomba Numérica",
+  "description": "Un juego de tensión y azar donde los jugadores deben evitar la cifra explosiva. ¡Sobrevive a la detonación!",
   "requestFramePermissions": []
 }

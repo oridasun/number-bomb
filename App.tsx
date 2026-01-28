@@ -9,18 +9,17 @@ import {
   Delete, 
   RotateCcw, 
   Crown, 
-  MessageSquareQuote,
   Zap,
   Gamepad2,
   AlertTriangle,
   CheckCircle2,
   Home,
   ArrowDownCircle,
-  ArrowUpCircle
+  ArrowUpCircle,
+  Info
 } from 'lucide-react';
 import { GameState, Player, GuessEntry, Range, GameMode } from './types';
 import { Card, Button, Confetti } from './components/UI';
-import { getAICommentary } from './services/geminiService';
 
 const App: React.FC = () => {
   // Configuración del juego
@@ -40,9 +39,8 @@ const App: React.FC = () => {
   const [lastLoserId, setLastLoserId] = useState<number | null>(null);
   
   // Estados de UI
-  const [aiMessage, setAiMessage] = useState('¡Bienvenidos a la masacre numérica!');
+  const [statusMessage, setStatusMessage] = useState('¡Empieza la partida!');
   const [lastFeedback, setLastFeedback] = useState<{msg: string, type: 'high' | 'low' | null}>({msg: '', type: null});
-  const [isLoadingAi, setIsLoadingAi] = useState(false);
   const [shake, setShake] = useState(false);
 
   // Inicializar jugadores
@@ -57,6 +55,7 @@ const App: React.FC = () => {
   };
 
   const startNewRound = (currentPlayers: Player[], startingPlayerId: number) => {
+    // La elección del número es arbitraria/aleatoria por la app
     const target = Math.floor(Math.random() * gameMode) + 1;
     setTargetNumber(target);
     setRange({ min: 1, max: gameMode });
@@ -65,15 +64,8 @@ const App: React.FC = () => {
     setGuess('');
     setGameState('playing');
     setLastLoserId(null);
-    setLastFeedback({msg: 'La bomba está activa. ¡Cuidado!', type: null});
-    updateAiMessage(1, gameMode, startingPlayerId);
-  };
-
-  const updateAiMessage = async (min: number, max: number, pid: number, lastVal?: number) => {
-    setIsLoadingAi(true);
-    const msg = await getAICommentary(min, max, pid, isElimination, lastVal);
-    setAiMessage(msg);
-    setIsLoadingAi(false);
+    setLastFeedback({msg: 'Bomba activa. ¡Cuidado!', type: null});
+    setStatusMessage(`El número secreto está entre 1 y ${gameMode}`);
   };
 
   const handleKeypad = useCallback((char: string) => {
@@ -129,11 +121,11 @@ const App: React.FC = () => {
       if (val < targetNumber) {
         newRange.min = val + 1;
         feedbackType = 'low';
-        feedbackMsg = `¡Número BAJO! El nuevo rango es ${newRange.min} - ${newRange.max}`;
+        feedbackMsg = `Número BAJO. Rango: ${newRange.min} - ${newRange.max}`;
       } else {
         newRange.max = val - 1;
         feedbackType = 'high';
-        feedbackMsg = `¡Número ALTO! El nuevo rango es ${newRange.min} - ${newRange.max}`;
+        feedbackMsg = `Número ALTO. Rango: ${newRange.min} - ${newRange.max}`;
       }
       
       setLastFeedback({ msg: feedbackMsg, type: feedbackType });
@@ -146,7 +138,7 @@ const App: React.FC = () => {
       const nextId = survivors[nextIndex].id;
       
       setCurrentPlayerId(nextId);
-      updateAiMessage(newRange.min, newRange.max, nextId, val);
+      setStatusMessage(`Turno del Jugador ${nextId}`);
     }
   }, [guess, range, currentPlayerId, players, isElimination, targetNumber]);
 
@@ -169,8 +161,8 @@ const App: React.FC = () => {
             <div className="inline-flex p-4 bg-indigo-500/10 rounded-full mb-4 ring-1 ring-indigo-500/20">
               <Bomb size={48} className="text-indigo-500" />
             </div>
-            <h1 className="text-3xl font-extrabold text-white mb-2 font-display">Bomba Numérica AI</h1>
-            <p className="text-slate-400 text-sm italic opacity-80">"Donde los números explotan y la IA se ríe de ti."</p>
+            <h1 className="text-3xl font-extrabold text-white mb-2">Bomba Numérica</h1>
+            <p className="text-slate-400 text-sm">Evita el número secreto para sobrevivir.</p>
           </div>
 
           <div className="space-y-6">
@@ -199,7 +191,7 @@ const App: React.FC = () => {
             </div>
 
             <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-3">Selecciona Jugadores</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center mb-3">Jugadores</p>
               <div className="grid grid-cols-4 gap-2">
                 {[2, 3, 4, 5, 6, 7, 8, 10].map(n => (
                   <button 
@@ -264,14 +256,14 @@ const App: React.FC = () => {
 
           <Card className={`p-5 md:p-6 flex flex-col gap-5 shrink-0 relative border-slate-800 transition-transform ${shake ? 'animate-shake' : ''}`}>
             
-            {/* Mensaje de la IA */}
-            <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800 flex items-start gap-3 min-h-[70px]">
-              <div className={`p-2 rounded-lg bg-indigo-500/10 shrink-0 ${isLoadingAi ? 'animate-pulse' : ''}`}>
-                <MessageSquareQuote size={20} className="text-indigo-400" />
+            {/* Status Panel */}
+            <div className="bg-slate-950/50 p-3 rounded-2xl border border-slate-800 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
+                <Info size={20} className="text-indigo-400" />
               </div>
               <div className="flex-1">
-                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 leading-none">Bomba-Bot v1.0</p>
-                <p className="text-xs md:text-sm text-slate-300 italic font-medium leading-tight">"{aiMessage}"</p>
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 leading-none">Estado del Sistema</p>
+                <p className="text-xs md:text-sm text-slate-300 font-medium leading-tight">{statusMessage}</p>
               </div>
             </div>
 
@@ -383,14 +375,14 @@ const App: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">Ha sido un placer verte explotar.</p>
+                <p className="text-xs text-slate-500">Fin de la partida.</p>
               )}
            </div>
 
            <div className="flex flex-col gap-3">
               {isElimination && gameState === 'round_over' ? (
                 <Button onClick={() => startNewRound(players, players.find(p => p.isAlive)?.id || 1)}>
-                  Nueva Ronda <ChevronRight size={18} />
+                  Siguiente Ronda <ChevronRight size={18} />
                 </Button>
               ) : (
                 <Button onClick={() => setGameState('setup')}>
